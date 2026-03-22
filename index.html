@@ -1,78 +1,164 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>موقعي الشخصي - جابر</title>
-  <style>
-    body {
-      font-family: 'Tajawal', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(to bottom, #e0f7fa, #ffffff);
-      color: #333;
-      text-align: center;
-    }
-    header {
-      background: #0288d1;
-      color: white;
-      padding: 60px 20px;
-    }
-    h1 { margin: 0; font-size: 3rem; }
-    .container {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 0 20px;
-    }
-    .about {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
-    }
-    .social a {
-      margin: 0 15px;
-      font-size: 1.8rem;
-      color: #0288d1;
-      text-decoration: none;
-    }
-    footer {
-      margin-top: 50px;
-      padding: 20px;
-      background: #0288d1;
-      color: white;
-    }
-  </style>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة الحروف - نسخة مضمونة التشغيل</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans Arabic', sans-serif; background-color: #0a0a0a; color: white; direction: rtl; }
+        .hexagon { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+        .active-hex { background-color: #fbbf24 !important; color: black !important; transform: scale(1.1); z-index: 10; }
+        .team1-hex { background-color: #2563eb !important; border-color: #60a5fa !important; box-shadow: 0 0 15px rgba(37,99,235,0.6); }
+        .team2-hex { background-color: #dc2626 !important; border-color: #f87171 !important; box-shadow: 0 0 15px rgba(220,38,38,0.6); }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-  <header>
-    <h1>مرحبًا! أنا جابر</h1>
-    <p>طالب | مبرمج مبتدئ | أحب التقنية والبرمجة</p>
-  </header>
-
-  <div class="container">
-    <div class="about">
-      <h2>عني</h2>
-      <p>
-        أهلاً! أنا جابر من الرياض، أتعلم البرمجة وأحب صنع مواقع بسيطة وجميلة.<br>
-        هدفي أطور مهاراتي وأصنع مشاريع مفيدة.
-      </p>
+    <!-- شاشة البداية -->
+    <div id="home-screen" class="text-center">
+        <h1 class="text-6xl font-black mb-8">بوابة <span class="text-blue-500">الحروف</span></h1>
+        <button onclick="startGame()" class="px-12 py-4 bg-white text-black rounded-2xl font-bold text-2xl hover:scale-105 transition-all">ابدأ اللعب</button>
     </div>
 
-    <h2>تواصلوا معي</h2>
-    <div class="social">
-      <a href="https://twitter.com" target="_blank">𝕏</a>
-      <a href="https://instagram.com" target="_blank">📸</a>
-      <a href="https://wa.me/966xxxxxxxxx" target="_blank">واتساب</a>
+    <!-- شاشة اللعبة -->
+    <div id="game-screen" class="hidden w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- الشبكة -->
+        <div class="lg:col-span-7 flex flex-col items-center justify-center bg-white/5 p-8 rounded-[40px] border border-white/10">
+            <div id="grid-container" class="grid grid-cols-5 gap-2"></div>
+        </div>
+
+        <!-- لوحة التحكم -->
+        <div class="lg:col-span-5 bg-white/10 p-8 rounded-[40px] border border-white/20 flex flex-col justify-between">
+            <div id="question-area" class="text-center py-10">
+                <div class="text-2xl text-gray-500 mb-4">اختر حرفاً للبدء</div>
+            </div>
+            
+            <div class="flex justify-around border-t border-white/10 pt-8">
+                <div class="text-center">
+                    <div class="text-blue-400 font-bold">الأزرق</div>
+                    <div id="score1" class="text-4xl font-black">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-red-400 font-bold">الأحمر</div>
+                    <div id="score2" class="text-4xl font-black">0</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <footer>
-    <p>© 2026 جابر - جميع الحقوق محفوظة</p>
-  </footer>
+    <script>
+        const letters = "أبتثجحخدذرزسشصضطظعغفقكلمنهوي".split("");
+        const questions = {
+            'أ': { q: "أطول نهر في العالم؟", a: "النيل" },
+            'ب': { q: "بحر يقع بين أفريقيا وآسيا؟", a: "البحر الأحمر" },
+            'ت': { q: "تمثال شهير في أمريكا؟", a: "تمثال الحرية" },
+            'ث': { q: "ثاني أكبر كوكب؟", a: "زحل" },
+            'ج': { q: "جبل نزل فيه الوحي؟", a: "جبل النور" },
+            'ح': { q: "حرب بدأت عام 1939؟", a: "الحرب العالمية الثانية" },
+            'خ': { q: "خط يقسم الأرض لنصفين؟", a: "خط الاستواء" },
+            'د': { q: "دولة فيها القدس؟", a: "فلسطين" },
+            'ر': { q: "رابع الخلفاء الراشدين؟", a: "علي بن أبي طالب" },
+            'س': { q: "سورة تسمى عروس القرآن؟", a: "الرحمن" },
+            'ع': { q: "عاصمة السعودية؟", a: "الرياض" },
+            'ف': { q: "فاكهة ملكة الفواكه؟", a: "المانجو" },
+            'ق': { q: "قارة تسمى العجوز؟", a: "أوروبا" },
+            'ك': { q: "الكوكب الأحمر؟", a: "المريخ" },
+            'م': { q: "معدن سائل في ميزان الحرارة؟", a: "الزئبق" },
+            'ن': { q: "نبي ابتلعه الحوت؟", a: "يونس" },
+            'ي': { q: "يوم بعد رمضان؟", a: "عيد الفطر" }
+        };
 
+        let gameState = {
+            grid: [],
+            scores: [0, 0],
+            activeId: null,
+            timer: 15,
+            timerInterval: null
+        };
+
+        function startGame() {
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            initGrid();
+        }
+
+        function initGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            const shuffled = [...letters].sort(() => Math.random() - 0.5);
+            
+            for (let i = 0; i < 25; i++) {
+                const letter = shuffled[i % shuffled.length];
+                const btn = document.createElement('button');
+                btn.className = `w-16 h-18 hexagon bg-gray-800 border-2 border-white/10 flex items-center justify-center text-xl font-bold transition-all hover:bg-gray-700`;
+                btn.id = `hex-${i}`;
+                btn.innerText = letter;
+                btn.onclick = () => handleCellClick(i, letter);
+                
+                const wrapper = document.createElement('div');
+                if (Math.floor(i/5) % 2 !== 0) wrapper.className = 'translate-x-6';
+                wrapper.appendChild(btn);
+                container.appendChild(wrapper);
+                gameState.grid.push({ id: i, letter, status: 'neutral' });
+            }
+        }
+
+        function handleCellClick(id, letter) {
+            if (gameState.activeId !== null || gameState.grid[id].status !== 'neutral') return;
+            
+            gameState.activeId = id;
+            document.getElementById(`hex-${id}`).classList.add('active-hex');
+            
+            const qData = questions[letter] || { q: "سؤال تجريبي لهذا الحرف؟", a: "إجابة" };
+            
+            const area = document.getElementById('question-area');
+            area.innerHTML = `
+                <div class="text-7xl font-black text-yellow-400 mb-4">${letter}</div>
+                <div class="text-3xl font-bold mb-6">${qData.q}</div>
+                <div id="timer-display" class="text-5xl font-mono text-red-500 mb-8">15</div>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="markPoint(1)" class="py-4 bg-blue-600 rounded-xl font-bold">نقطة للأزرق</button>
+                    <button onclick="markPoint(2)" class="py-4 bg-red-600 rounded-xl font-bold">نقطة للأحمر</button>
+                </div>
+            `;
+            
+            startTimer();
+        }
+
+        function startTimer() {
+            gameState.timer = 15;
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(() => {
+                gameState.timer--;
+                document.getElementById('timer-display').innerText = gameState.timer;
+                if (gameState.timer <= 0) {
+                    clearInterval(gameState.timerInterval);
+                    resetTurn();
+                }
+            }, 1000);
+        }
+
+        function markPoint(teamId) {
+            clearInterval(gameState.timerInterval);
+            const id = gameState.activeId;
+            gameState.grid[id].status = `team${teamId}`;
+            
+            const btn = document.getElementById(`hex-${id}`);
+            btn.classList.remove('active-hex');
+            btn.classList.add(teamId === 1 ? 'team1-hex' : 'team2-hex');
+            
+            gameState.scores[teamId - 1] += 10;
+            document.getElementById(`score${teamId}`).innerText = gameState.scores[teamId - 1];
+            
+            resetTurn();
+        }
+
+        function resetTurn() {
+            gameState.activeId = null;
+            document.getElementById('question-area').innerHTML = '<div class="text-2xl text-gray-500 py-20">اختر حرفاً من الشبكة</div>';
+        }
+    </script>
 </body>
 </html>
