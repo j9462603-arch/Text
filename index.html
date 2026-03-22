@@ -3,162 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بوابة الحروف - نسخة مضمونة التشغيل</title>
+    <title>بوابة الحروف - النسخة الاحترافية</title>
+    
+    <!-- المكتبات الأساسية -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans Arabic', sans-serif; background-color: #0a0a0a; color: white; direction: rtl; }
-        .hexagon { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
-        .active-hex { background-color: #fbbf24 !important; color: black !important; transform: scale(1.1); z-index: 10; }
-        .team1-hex { background-color: #2563eb !important; border-color: #60a5fa !important; box-shadow: 0 0 15px rgba(37,99,235,0.6); }
-        .team2-hex { background-color: #dc2626 !important; border-color: #f87171 !important; box-shadow: 0 0 15px rgba(220,38,38,0.6); }
+        
+        :root {
+            --bg: #050505;
+            --card: #0f0f0f;
+            --blue: #2563eb;
+            --red: #dc2626;
+            --yellow: #fbbf24;
+        }
+
+        body {
+            font-family: 'Noto Sans Arabic', sans-serif;
+            background-color: var(--bg);
+            color: white;
+            margin: 0;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* تصميم الخلية السداسية الاحترافي */
+        .hexagon-container {
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+
+        .hexagon {
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .hex-neutral { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); color: #666; }
+        .hex-neutral:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); transform: scale(1.05); color: #fff; }
+        
+        .hex-active { background: var(--yellow) !important; color: #000 !important; transform: scale(1.1); z-index: 30; box-shadow: 0 0 30px var(--yellow); }
+        
+        .hex-team1 { background: var(--blue) !important; border: 2px solid #60a5fa !important; box-shadow: 0 0 20px rgba(37, 99, 235, 0.6); color: #fff !important; }
+        
+        .hex-team2 { background: var(--red) !important; border: 2px solid #f87171 !important; box-shadow: 0 0 20px rgba(220, 38, 38, 0.6); color: #fff !important; }
+
+        /* إزاحة الصفوف الفردية لخلق شكل خلية النحل */
+        .row-offset { transform: translateX(2.7rem); }
+
+        @media (max-width: 768px) {
+            .row-offset { transform: translateX(1.8rem); }
+            .hexagon { width: 3.5rem; height: 4rem; }
+        }
+
+        .glass { background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body>
+    <div id="root"></div>
 
-    <!-- شاشة البداية -->
-    <div id="home-screen" class="text-center">
-        <h1 class="text-6xl font-black mb-8">بوابة <span class="text-blue-500">الحروف</span></h1>
-        <button onclick="startGame()" class="px-12 py-4 bg-white text-black rounded-2xl font-bold text-2xl hover:scale-105 transition-all">ابدأ اللعب</button>
-    </div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef } = React;
+        const { motion, AnimatePresence } = FramerMotion;
 
-    <!-- شاشة اللعبة -->
-    <div id="game-screen" class="hidden w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- الشبكة -->
-        <div class="lg:col-span-7 flex flex-col items-center justify-center bg-white/5 p-8 rounded-[40px] border border-white/10">
-            <div id="grid-container" class="grid grid-cols-5 gap-2"></div>
-        </div>
-
-        <!-- لوحة التحكم -->
-        <div class="lg:col-span-5 bg-white/10 p-8 rounded-[40px] border border-white/20 flex flex-col justify-between">
-            <div id="question-area" class="text-center py-10">
-                <div class="text-2xl text-gray-500 mb-4">اختر حرفاً للبدء</div>
-            </div>
-            
-            <div class="flex justify-around border-t border-white/10 pt-8">
-                <div class="text-center">
-                    <div class="text-blue-400 font-bold">الأزرق</div>
-                    <div id="score1" class="text-4xl font-black">0</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-red-400 font-bold">الأحمر</div>
-                    <div id="score2" class="text-4xl font-black">0</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const letters = "أبتثجحخدذرزسشصضطظعغفقكلمنهوي".split("");
-        const questions = {
-            'أ': { q: "أطول نهر في العالم؟", a: "النيل" },
-            'ب': { q: "بحر يقع بين أفريقيا وآسيا؟", a: "البحر الأحمر" },
-            'ت': { q: "تمثال شهير في أمريكا؟", a: "تمثال الحرية" },
-            'ث': { q: "ثاني أكبر كوكب؟", a: "زحل" },
-            'ج': { q: "جبل نزل فيه الوحي؟", a: "جبل النور" },
-            'ح': { q: "حرب بدأت عام 1939؟", a: "الحرب العالمية الثانية" },
-            'خ': { q: "خط يقسم الأرض لنصفين؟", a: "خط الاستواء" },
-            'د': { q: "دولة فيها القدس؟", a: "فلسطين" },
-            'ر': { q: "رابع الخلفاء الراشدين؟", a: "علي بن أبي طالب" },
-            'س': { q: "سورة تسمى عروس القرآن؟", a: "الرحمن" },
-            'ع': { q: "عاصمة السعودية؟", a: "الرياض" },
-            'ف': { q: "فاكهة ملكة الفواكه؟", a: "المانجو" },
-            'ق': { q: "قارة تسمى العجوز؟", a: "أوروبا" },
-            'ك': { q: "الكوكب الأحمر؟", a: "المريخ" },
-            'م': { q: "معدن سائل في ميزان الحرارة؟", a: "الزئبق" },
-            'ن': { q: "نبي ابتلعه الحوت؟", a: "يونس" },
-            'ي': { q: "يوم بعد رمضان؟", a: "عيد الفطر" }
+        // --- الأسئلة ---
+        const QUESTIONS = {
+            'أ': { q: "أطول نهر في العالم؟", a: "النيل", o: ["النيل", "الأمازون"] },
+            'ب': { q: "بحر يقع بين أفريقيا وآسيا؟", a: "البحر الأحمر", o: ["البحر الأحمر", "البحر المتوسط"] },
+            'ت': { q: "تمثال شهير في أمريكا يرمز للحرية؟", a: "تمثال الحرية", o: ["تمثال الحرية", "تمثال النهضة"] },
+            'ث': { q: "ثاني أكبر كوكب في المجموعة الشمسية؟", a: "زحل", o: ["زحل", "المشتري"] },
+            'ج': { q: "جبل شهير في مكة نزل فيه الوحي؟", a: "جبل النور", o: ["جبل النور", "جبل أحد"] },
+            'ح': { q: "حرب عالمية بدأت عام 1939؟", a: "الحرب العالمية الثانية", o: ["الحرب العالمية الثانية", "الحرب العالمية الأولى"] },
+            'خ': { q: "خط وهمي يقسم الأرض لنصفين؟", a: "خط الاستواء", o: ["خط الاستواء", "خط جرينتش"] },
+            'د': { q: "دولة تقع فيها مدينة القدس؟", a: "فلسطين", o: ["فلسطين", "الأردن"] },
+            'ر': { q: "رابع الخلفاء الراشدين؟", a: "علي بن أبي طالب", o: ["علي بن أبي طالب", "عمر بن الخطاب"] },
+            'س': { q: "سورة تسمى عروس القرآن؟", a: "الرحمن", o: ["الرحمن", "يس"] },
+            'ع': { q: "عاصمة المملكة العربية السعودية؟", a: "الرياض", o: ["الرياض", "جدة"] },
+            'ف': { q: "فاكهة يطلق عليها ملكة الفواكه؟", a: "المانجو", o: ["المانجو", "التفاح"] },
+            'ق': { q: "قارة تسمى القارة العجوز؟", a: "أوروبا", o: ["أوروبا", "آسيا"] },
+            'ك': { q: "كوكب يسمى الكوكب الأحمر؟", a: "المريخ", o: ["المريخ", "زحل"] },
+            'ل': { q: "لغة الضاد هي اللغة؟", a: "العربية", o: ["العربية", "الفارسية"] },
+            'م': { q: "معدن سائل يستخدم في موازين الحرارة؟", a: "الزئبق", o: ["الزئبق", "الرصاص"] },
+            'ن': { q: "نبي الله الذي ابتلعه الحوت؟", a: "يونس", o: ["يونس", "أيوب"] },
+            'ي': { q: "يوم يحتفل فيه المسلمون بعد رمضان؟", a: "عيد الفطر", o: ["عيد الفطر", "عيد الأضحى"] },
         };
 
-        let gameState = {
-            grid: [],
-            scores: [0, 0],
-            activeId: null,
-            timer: 15,
-            timerInterval: null
-        };
+        const LETTERS = "أبتثجحخدذرزسشصضطظعغفقكلمنهوي".split("");
 
-        function startGame() {
-            document.getElementById('home-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            initGrid();
-        }
+        const App = () => {
+            const [view, setView] = useState('home');
+            const [grid, setGrid] = useState([]);
+            const [teams, setTeams] = useState([
+                { id: 1, name: 'الفريق الأول', color: 'blue', score: 0 },
+                { id: 2, name: 'الفريق الثاني', color: 'red', score: 0 },
+            ]);
+            const [activeId, setActiveId] = useState(null);
+            const [timer, setTimer] = useState(15);
+            const [isTimerActive, setIsTimerActive] = useState(false);
+            const [buzzerTeam, setBuzzerTeam] = useState(null);
+            const [winner, setWinner] = useState(null);
 
-        function initGrid() {
-            const container = document.getElementById('grid-container');
-            container.innerHTML = '';
-            const shuffled = [...letters].sort(() => Math.random() - 0.5);
-            
-            for (let i = 0; i < 25; i++) {
-                const letter = shuffled[i % shuffled.length];
-                const btn = document.createElement('button');
-                btn.className = `w-16 h-18 hexagon bg-gray-800 border-2 border-white/10 flex items-center justify-center text-xl font-bold transition-all hover:bg-gray-700`;
-                btn.id = `hex-${i}`;
-                btn.innerText = letter;
-                btn.onclick = () => handleCellClick(i, letter);
-                
-                const wrapper = document.createElement('div');
-                if (Math.floor(i/5) % 2 !== 0) wrapper.className = 'translate-x-6';
-                wrapper.appendChild(btn);
-                container.appendChild(wrapper);
-                gameState.grid.push({ id: i, letter, status: 'neutral' });
-            }
-        }
-
-        function handleCellClick(id, letter) {
-            if (gameState.activeId !== null || gameState.grid[id].status !== 'neutral') return;
-            
-            gameState.activeId = id;
-            document.getElementById(`hex-${id}`).classList.add('active-hex');
-            
-            const qData = questions[letter] || { q: "سؤال تجريبي لهذا الحرف؟", a: "إجابة" };
-            
-            const area = document.getElementById('question-area');
-            area.innerHTML = `
-                <div class="text-7xl font-black text-yellow-400 mb-4">${letter}</div>
-                <div class="text-3xl font-bold mb-6">${qData.q}</div>
-                <div id="timer-display" class="text-5xl font-mono text-red-500 mb-8">15</div>
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="markPoint(1)" class="py-4 bg-blue-600 rounded-xl font-bold">نقطة للأزرق</button>
-                    <button onclick="markPoint(2)" class="py-4 bg-red-600 rounded-xl font-bold">نقطة للأحمر</button>
-                </div>
-            `;
-            
-            startTimer();
-        }
-
-        function startTimer() {
-            gameState.timer = 15;
-            clearInterval(gameState.timerInterval);
-            gameState.timerInterval = setInterval(() => {
-                gameState.timer--;
-                document.getElementById('timer-display').innerText = gameState.timer;
-                if (gameState.timer <= 0) {
-                    clearInterval(gameState.timerInterval);
-                    resetTurn();
+            // بدء اللعبة
+            const startGame = () => {
+                const newGrid = [];
+                const shuffled = [...LETTERS].sort(() => Math.random() - 0.5);
+                for (let i = 0; i < 25; i++) {
+                    newGrid.push({ id: i, letter: shuffled[i % shuffled.length], status: 'neutral' });
                 }
-            }, 1000);
-        }
+                setGrid(newGrid);
+                setTeams(t => t.map(team => ({ ...team, score: 0 })));
+                setWinner(null);
+                setView('game');
+            };
 
-        function markPoint(teamId) {
-            clearInterval(gameState.timerInterval);
-            const id = gameState.activeId;
-            gameState.grid[id].status = `team${teamId}`;
-            
-            const btn = document.getElementById(`hex-${id}`);
-            btn.classList.remove('active-hex');
-            btn.classList.add(teamId === 1 ? 'team1-hex' : 'team2-hex');
-            
-            gameState.scores[teamId - 1] += 10;
-            document.getElementById(`score${teamId}`).innerText = gameState.scores[teamId - 1];
-            
-            resetTurn();
-        }
+            // منطق المؤقت
+            useEffect(() => {
+                let interval;
+                if (isTimerActive && timer > 0) {
+                    interval = setInterval(() => setTimer(t => t - 1), 1000);
+                } else if (timer === 0 && isTimerActive) {
+                    setIsTimerActive(false);
+                    handleWrong();
+                }
+                return () => clearInterval(interval);
+            }, [isTimerActive, timer]);
 
-        function resetTurn() {
-            gameState.activeId = null;
-            document.getElementById('question-area').innerHTML = '<div class="text-2xl text-gray-500 py-20">اختر حرفاً من الشبكة</div>';
-        }
+            const handleCellClick = (id) => {
+                if (grid[id].status !== 'neutral' || activeId !== null) return;
+                setActiveId(id);
+                setTimer(15);
+                setIsTimerActive(true);
+                setBuzzerTeam(null);
+            };
+
+            const handleBuzzer = (teamId) => {
+                if (activeId === null || buzzerTeam !== null) return;
+                setBuzzerTeam(teamId);
+                setTimer(7);
+                speak(`فريق ${teams[teamId-1].name}`);
+            };
+
+            const handleCorrect = (teamId) => {
+                const finalTeamId = teamId || buzzerTeam;
+                if (!finalTeamId || activeId === null) return;
+
+                const newGrid = [...grid];
+                newGrid[activeId].status = finalTeamId === 1 ? 'team1' : 'team2';
+                
+                const newTeams = [...teams];
+                newTeams[finalTeamId - 1].score += 10;
+                
+                setGrid(newGrid);
+                setTeams(newTeams);
+                resetTurn();
+
+                // فحص الفوز (تبسيط: أول من يصل لـ 60)
+                if (newTeams[finalTeamId - 1].score >= 60) {
+                    setWinner(newTeams[finalTeamId - 1]);
+                    setView('result');
+                }
+            };
+
+            const handleWrong = () => {
+                resetTurn();
+            };
+
+            const resetTurn = () => {
+                setActiveId(null);
+                setBuzzerTeam(null);
+                setIsTimerActive(false);
+            };
+
+            const speak = (text) => {
+                const msg = new SpeechSynthesisUtterance(text);
+                msg.lang = 'ar-SA';
+                window.speechSynthesis.speak(msg);
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                    <AnimatePresence mode="wait">
+                        {view === 'home' && (
+                            <motion.div key="home" initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} exit={{opacity:0}} className="text-center">
+                                <h1 className="text-7xl md:text-9xl font-black mb-6 tracking-tighter">بوابة <span className="text-blue-600">الحروف</span></h1>
+                                <p className="text-xl text-gray-500 mb-12 max-w-2xl mx-auto">تحدي الذكاء والسرعة في شبكة الحروف السداسية</p>
+                                <button onClick={startGame} className="px-16 py-5 bg-white text-black rounded-3xl font-bold text-3xl hover:scale-105 transition-all shadow-2xl shadow-white/10">ابدأ المسابقة</button>
+                            </motion.div>
+                        )}
+
+                        {view === 'game' && (
+                            <motion.div key="game" initial={{opacity:0}} animate={{opacity:1}} className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                {/* الشبكة السداسية */}
+                                <div className="lg:col-span-7 flex flex-col items-center justify-center glass rounded-[50px] p-10 relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-blue-500/5 blur-[100px] rounded-full"></div>
+                                    <div className="grid grid-cols-5 gap-x-4 gap-y-2 relative">
+                                        {grid.map((cell, idx) => (
+                                            <div key={cell.id} className={Math.floor(idx/5)%2 !== 0 ? "row-offset" : ""}>
+                                                <button 
+                                                    onClick={() => handleCellClick(cell.id)}
+                                                    className={`w-16 h-20 md:w-20 md:h-24 hexagon flex items-center justify-center text-2xl font-black
+                                                        ${cell.status === 'team1' ? 'hex-team1' : 
+                                                          cell.status === 'team2' ? 'hex-team2' : 
+                                                          activeId === cell.id ? 'hex-active' : 'hex-neutral'}`}
+                                                >
+                                                    {cell.letter}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* لوحة التحكم */}
+                                <div className="lg:col-span-5 flex flex-col gap-6">
+                                    <div className="glass rounded-[40px] p-8 flex-1 flex flex-col justify-center items-center text-center">
+                                        {activeId !== null ? (
+                                            <div className="w-full">
+                                                <div className="text-8xl font-black text-yellow-400 mb-6 drop-shadow-2xl">{grid[activeId].letter}</div>
+                                                <div className="text-3xl font-bold mb-8 leading-tight">{QUESTIONS[grid[activeId].letter]?.q || "ما هو اسم هذا الحرف؟"}</div>
+                                                <div className={`text-6xl font-mono font-black mb-8 ${timer <= 5 ? 'text-red-500 animate-pulse' : 'text-white'}`}>{timer}</div>
+                                                
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    {buzzerTeam === null ? (
+                                                        <>
+                                                            <button onClick={() => handleBuzzer(1)} className="py-6 bg-blue-600/20 border border-blue-500/30 rounded-3xl font-bold text-xl hover:bg-blue-600 transition-all">بـازر الأزرق</button>
+                                                            <button onClick={() => handleBuzzer(2)} className="py-6 bg-red-600/20 border border-red-500/30 rounded-3xl font-bold text-xl hover:bg-red-600 transition-all">بـازر الأحمر</button>
+                                                        </>
+                                                    ) : (
+                                                        <div className="col-span-2 space-y-4">
+                                                            <div className={`py-4 rounded-2xl text-2xl font-bold ${buzzerTeam === 1 ? 'bg-blue-600' : 'bg-red-600'}`}>دور الفريق {buzzerTeam}</div>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <button onClick={() => handleCorrect(buzzerTeam)} className="py-4 bg-emerald-500 rounded-2xl font-bold">إجابة صحيحة</button>
+                                                                <button onClick={handleWrong} className="py-4 bg-rose-500 rounded-2xl font-bold">إجابة خاطئة</button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="py-20">
+                                                <div className="text-6xl mb-6 opacity-20">?</div>
+                                                <div className="text-2xl font-bold text-gray-500">اختر حرفاً للبدء</div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* النتائج */}
+                                    <div className="glass rounded-[30px] p-6 flex justify-around items-center">
+                                        <div className="text-center">
+                                            <div className="text-blue-400 font-bold mb-1">الأزرق</div>
+                                            <div className="text-5xl font-black">{teams[0].score}</div>
+                                        </div>
+                                        <div className="w-px h-12 bg-white/10"></div>
+                                        <div className="text-center">
+                                            <div className="text-red-400 font-bold mb-1">الأحمر</div>
+                                            <div className="text-5xl font-black">{teams[1].score}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {view === 'result' && (
+                            <motion.div key="result" initial={{scale:0.8, opacity:0}} animate={{scale:1, opacity:1}} className="text-center">
+                                <div className="text-9xl mb-8">🏆</div>
+                                <h2 className="text-6xl font-black mb-6">مبروك للفائز!</h2>
+                                <div className={`text-8xl font-black mb-12 p-10 rounded-[50px] glass border-4 ${winner.id === 1 ? 'border-blue-500 text-blue-500' : 'border-red-500 text-red-500'}`}>
+                                    {winner.name}
+                                </div>
+                                <button onClick={() => setView('home')} className="px-16 py-6 bg-white text-black rounded-3xl font-bold text-3xl hover:scale-105 transition-all">العودة للرئيسية</button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
