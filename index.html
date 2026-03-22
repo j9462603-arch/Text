@@ -3,215 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة بوابة الحروف - نسخة الملف الواحد</title>
+    <title>تحدي بوابة الحروف الذكي</title>
     
-    <!-- المكتبات اللازمة (React, Tailwind, Lucide, Framer Motion) -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
         
         body {
-            font-family: 'Noto Sans Arabic', sans-serif;
-            background-color: #0a0a0a;
+            font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1a 100%);
             color: white;
             margin: 0;
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
-        .clip-hexagon {
+        .hex-path {
             clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
         }
 
-        .arabic-text { font-family: 'Noto Sans Arabic', sans-serif; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+        .glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useCallback } = React;
+        const { useState, useEffect } = React;
         const { motion, AnimatePresence } = FramerMotion;
 
-        // --- البيانات والأسئلة ---
-        const ARABIC_LETTERS = "أبتثجحخدذرزسشصضطظعغفقكلمنهوي".split("");
-        const QUESTIONS_DATA = {
-            'أ': { question: "أطول نهر في العالم؟", answer: "النيل", options: ["النيل", "الأمازون"] },
-            'ب': { question: "بحر يقع بين قارتي أفريقيا وآسيا؟", answer: "البحر الأحمر", options: ["البحر الأحمر", "البحر المتوسط"] },
-            'ت': { question: "تمثال شهير في أمريكا يرمز للحرية؟", answer: "تمثال الحرية", options: ["تمثال الحرية", "تمثال النهضة"] },
-            'ث': { question: "ثاني أكبر كوكب في المجموعة الشمسية؟", answer: "زحل", options: ["زحل", "المشتري"] },
-            'ج': { question: "جبل شهير في مكة نزل فيه الوحي؟", answer: "جبل النور", options: ["جبل النور", "جبل أحد"] },
-            'ح': { question: "حرب عالمية بدأت عام 1939؟", answer: "الحرب العالمية الثانية", options: ["الحرب العالمية الثانية", "الحرب العالمية الأولى"] },
-            'خ': { question: "خط وهمي يقسم الأرض لنصفين؟", answer: "خط الاستواء", options: ["خط الاستواء", "خط جرينتش"] },
-            'د': { question: "دولة تقع فيها مدينة القدس؟", answer: "فلسطين", options: ["فلسطين", "الأردن"] },
-            'ذ': { question: "ذهب أسود يطلق على؟", answer: "البترول", options: ["البترول", "الفحم"] },
-            'ر': { question: "رابع الخلفاء الراشدين؟", answer: "علي بن أبي طالب", options: ["علي بن أبي طالب", "عمر بن الخطاب"] },
-            'ز': { question: "زهرة وطنية لليابان؟", answer: "الكرز", options: ["الكرز", "الياسمين"] },
-            'س': { question: "سورة تسمى عروس القرآن؟", answer: "الرحمن", options: ["الرحمن", "يس"] },
-            'ش': { question: "شاعر لقب بأمير الشعراء؟", answer: "أحمد شوقي", options: ["أحمد شوقي", "المتنبي"] },
-            'ص': { question: "صلاة تؤدى عند كسوف الشمس؟", answer: "صلاة الكسوف", options: ["صلاة الكسوف", "صلاة الاستسقاء"] },
-            'ض': { question: "ضابط إيقاع القلب الطبيعي؟", answer: "النبض", options: ["النبض", "التنفس"] },
-            'ط': { question: "طبيب عربي لقب بالشيخ الرئيس؟", answer: "ابن سينا", options: ["ابن سينا", "الرازي"] },
-            'ظ': { question: "ظاهرة تحدث عند حجب القمر للشمس؟", answer: "كسوف الشمس", options: ["كسوف الشمس", "خسوف القمر"] },
-            'ع': { question: "عاصمة المملكة العربية السعودية؟", answer: "الالرياض", options: ["الرياض", "جدة"] },
-            'غ': { question: "غار كان يتعبد فيه الرسول؟", answer: "غار حراء", options: ["غار حراء", "غار ثور"] },
-            'ف': { question: "فاكهة يطلق عليها ملكة الفواكه؟", answer: "المانجو", options: ["المانجو", "التفاح"] },
-            'ق': { question: "قارة تسمى القارة العجوز؟", answer: "أوروبا", options: ["أوروبا", "آسيا"] },
-            'ك': { question: "كوكب يسمى الكوكب الأحمر؟", answer: "المريخ", options: ["المريخ", "زحل"] },
-            'ل': { question: "لغة الضاد هي اللغة؟", answer: "العربية", options: ["العربية", "الفارسية"] },
-            'م': { question: "معدن سائل يستخدم في موازين الحرارة؟", answer: "الزئبق", options: ["الزئبق", "الرصاص"] },
-            'ن': { question: "نبي الله الذي ابتلعه الحوت؟", answer: "يونس", options: ["يونس", "أيوب"] },
-            'ه': { question: "هضبة تسمى سقف العالم؟", answer: "التبت", options: ["التبت", "الأناضول"] },
-            'و': { question: "وحدة قياس شدة التيار الكهربائي؟", answer: "الأمبير", options: ["الأمبير", "الفولت"] },
-            'ي': { question: "يوم يحتفل فيه المسلمون بعد رمضان؟", answer: "عيد الفطر", options: ["عيد الفطر", "عيد الأضحى"] },
+        const LETTERS = "أبتثجحخدذرزسشصضطظعغفقكلمنهوي".split("");
+        
+        const QUESTIONS = {
+            'أ': "ما هو أول حرف في الأبجدية؟",
+            'ب': "كوكب يلقب بالكوكب الأحمر؟",
+            'ت': "ما هي عاصمة اليابان؟",
+            'ث': "حيوان يلقب بـ 'مكر الثعلب'؟",
+            'ج': "أكبر قارة في العالم من حيث المساحة؟",
+            'ح': "طائر يضرب به المثل في حدة البصر؟",
+            'خ': "مادة تستخرج من الأشجار لصناعة الورق؟",
+            'د': "دولة عربية عاصمتها الدوحة؟",
+            'ذ': "ما هو الذهب الأسود؟",
+            'ر': "ركن من أركان الإسلام يأتي بعد الصلاة؟",
+            'ز': "كوكب يمتلك حلقات واضحة حوله؟",
+            'س': "ما هي عاصمة المملكة العربية السعودية؟",
+            'ش': "نجم يمد الأرض بالحرارة والضوء؟",
+            'ص': "عاصمة مصر؟",
+            'ض': "اللغة التي تسمى لغة الـ...؟",
+            'ط': "أسرع حيوان بري في العالم؟",
+            'ظ': "وقت يختفي فيه الظل تقريباً؟",
+            'ع': "عملة الاتحاد الأوروبي؟",
+            'غ': "أكبر المحيطات في العالم؟",
+            'ف': "حيوان له خرطوم طويل؟",
+            'ق': "القارة التي تقع فيها فرنسا؟",
+            'ك': "ما هو العنصر الأساسي في تركيب الألماس؟",
+            'ل': "حيوان يلقب بملك الغابة؟",
+            'م': "أقرب كوكب للشمس؟",
+            'ن': "ما هو النهر الذي يمر في مصر؟",
+            'ه': "أعلى قمة جبلية في العالم؟",
+            'و': "ما هي عاصمة الولايات المتحدة؟",
+            'ي': "اليوم الذي يأتي بعد يوم الجمعة؟"
         };
 
-        const TEAM_COLORS = {
-            blue: { bg: 'bg-blue-600', border: 'border-blue-400', glow: 'shadow-[0_0_20px_rgba(37,99,235,0.6)]' },
-            red: { bg: 'bg-red-600', border: 'border-red-400', glow: 'shadow-[0_0_20px_rgba(220,38,38,0.6)]' }
-        };
-
-        // --- المكونات ---
         const App = () => {
-            const [view, setView] = useState('home');
+            const [gameState, setGameState] = useState('start'); // start, playing, result
             const [grid, setGrid] = useState([]);
-            const [teams, setTeams] = useState([
-                { id: 1, name: 'الفريق الأزرق', color: 'blue', score: 0 },
-                { id: 2, name: 'الفريق الأحمر', color: 'red', score: 0 },
-            ]);
-            const [activeCellId, setActiveCellId] = useState(null);
-            const [timer, setTimer] = useState(15);
-            const [isTimerActive, setIsTimerActive] = useState(false);
-            const [winner, setWinner] = useState(null);
+            const [activeId, setActiveId] = useState(null);
+            const [scores, setScores] = useState({ blue: 0, red: 0 });
+            const [timer, setTimer] = useState(20);
+            const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-            // إنشاء الشبكة عند البدء
-            const initGame = () => {
-                const newGrid = [];
-                const shuffled = [...ARABIC_LETTERS].sort(() => Math.random() - 0.5);
-                for (let i = 0; i < 25; i++) {
-                    newGrid.push({ id: i, letter: shuffled[i % 28], status: 'neutral' });
-                }
+            const startGame = () => {
+                const newGrid = LETTERS.map((l, i) => ({ id: i, char: l, owner: null }));
                 setGrid(newGrid);
-                setTeams(t => t.map(team => ({ ...team, score: 0 })));
-                setWinner(null);
-                setView('game');
+                setScores({ blue: 0, red: 0 });
+                setGameState('playing');
             };
 
-            // منطق المؤقت
             useEffect(() => {
                 let interval;
-                if (isTimerActive && timer > 0) {
+                if (isTimerRunning && timer > 0) {
                     interval = setInterval(() => setTimer(t => t - 1), 1000);
                 } else if (timer === 0) {
-                    setIsTimerActive(false);
-                    setActiveCellId(null);
+                    setIsTimerRunning(false);
                 }
                 return () => clearInterval(interval);
-            }, [isTimerActive, timer]);
+            }, [isTimerRunning, timer]);
 
-            const handleCellClick = (id) => {
-                if (grid[id].status !== 'neutral' || activeCellId !== null) return;
-                setActiveCellId(id);
-                setTimer(15);
-                setIsTimerActive(true);
+            const selectLetter = (id) => {
+                if (grid[id].owner) return;
+                setActiveId(id);
+                setTimer(20);
+                setIsTimerRunning(true);
             };
 
-            const handleAnswer = (teamId) => {
+            const claimLetter = (team) => {
                 const newGrid = [...grid];
-                newGrid[activeCellId].status = teamId === 1 ? 'team1' : 'team2';
-                
-                const newTeams = [...teams];
-                newTeams[teamId - 1].score += 10;
-                
+                newGrid[activeId].owner = team;
                 setGrid(newGrid);
-                setTeams(newTeams);
-                setActiveCellId(null);
-                setIsTimerActive(false);
+                setScores(prev => ({ ...prev, [team]: prev[team] + 1 }));
+                setActiveId(null);
+                setIsTimerRunning(false);
 
-                // فحص الفوز (تبسيط: أول من يصل لـ 50 نقطة)
-                if (newTeams[teamId - 1].score >= 50) {
-                    setWinner(newTeams[teamId - 1]);
-                    setView('result');
+                if (newGrid.every(cell => cell.owner !== null)) {
+                    setGameState('result');
                 }
             };
 
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                <div className="container mx-auto max-w-5xl px-4 py-8 min-h-screen flex flex-col items-center justify-center">
+                    
                     <AnimatePresence mode="wait">
-                        {view === 'home' && (
-                            <motion.div initial={{opacity:0}} animate={{opacity:1}} className="text-center">
-                                <h1 className="text-7xl font-black mb-8 arabic-text">بوابة <span className="text-blue-500">الحروف</span></h1>
-                                <button onClick={initGame} className="px-12 py-4 bg-white text-black rounded-2xl font-bold text-2xl hover:scale-105 transition-all">ابدأ اللعب</button>
+                        {gameState === 'start' && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                className="text-center"
+                            >
+                                <h1 className="text-6xl font-black mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                                    بوابة الحروف
+                                </h1>
+                                <button 
+                                    onClick={startGame}
+                                    className="bg-white text-indigo-900 px-10 py-4 rounded-full font-bold text-2xl hover:bg-opacity-90 transition-all shadow-xl"
+                                >
+                                    ابدأ التحدي
+                                </button>
                             </motion.div>
                         )}
 
-                        {view === 'game' && (
-                            <motion.div initial={{opacity:0}} animate={{opacity:1}} className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {/* الشبكة */}
-                                <div className="flex flex-col items-center justify-center bg-white/5 p-8 rounded-[40px] border border-white/10">
-                                    <div className="grid grid-cols-5 gap-2">
-                                        {grid.map((cell, idx) => (
-                                            <div key={cell.id} className={Math.floor(idx/5)%2 !== 0 ? "translate-x-6" : ""}>
-                                                <button 
-                                                    onClick={() => handleCellClick(cell.id)}
-                                                    className={`w-16 h-18 clip-hexagon border-2 flex items-center justify-center text-xl font-bold transition-all
-                                                        ${cell.status === 'team1' ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/50' : 
-                                                          cell.status === 'team2' ? 'bg-red-600 border-red-400 shadow-lg shadow-red-500/50' : 
-                                                          activeCellId === cell.id ? 'bg-yellow-400 text-black scale-110' : 'bg-gray-800 border-white/10 hover:bg-gray-700'}`}
-                                                >
-                                                    {cell.letter}
-                                                </button>
-                                            </div>
+                        {gameState === 'playing' && (
+                            <motion.div 
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+                            >
+                                {/* لوحة النتائج */}
+                                <div className="lg:col-span-3 flex lg:flex-col gap-4 justify-between order-2 lg:order-1">
+                                    <div className="glass-effect p-6 rounded-3xl text-center flex-1 border-b-4 border-blue-500 shadow-lg">
+                                        <div className="text-blue-400 font-bold mb-2">الفريق الأزرق</div>
+                                        <div className="text-5xl font-black">{scores.blue}</div>
+                                    </div>
+                                    <div className="glass-effect p-6 rounded-3xl text-center flex-1 border-b-4 border-red-500 shadow-lg">
+                                        <div className="text-red-400 font-bold mb-2">الفريق الأحمر</div>
+                                        <div className="text-5xl font-black">{scores.red}</div>
+                                    </div>
+                                </div>
+
+                                {/* خلية النحل (الشبكة) */}
+                                <div className="lg:col-span-6 flex justify-center order-1 lg:order-2">
+                                    <div className="grid grid-cols-5 gap-3 p-4 glass-effect rounded-[2rem]">
+                                        {grid.slice(0, 25).map((item, idx) => (
+                                            <motion.button
+                                                key={item.id}
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => selectLetter(item.id)}
+                                                className={`w-14 h-16 hex-path flex items-center justify-center text-xl font-black transition-all
+                                                    ${item.owner === 'blue' ? 'bg-blue-600 glow-blue' : 
+                                                      item.owner === 'red' ? 'bg-red-600 glow-red' : 
+                                                      activeId === item.id ? 'bg-yellow-400 text-black scale-110' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                            >
+                                                {item.char}
+                                            </motion.button>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* السؤال والتحكم */}
-                                <div className="bg-white/10 p-8 rounded-[40px] border border-white/20 flex flex-col justify-between">
-                                    {activeCellId !== null ? (
-                                        <div className="text-center">
-                                            <div className="text-6xl font-black mb-4 text-yellow-400">{grid[activeCellId].letter}</div>
-                                            <div className="text-3xl font-bold mb-8">{QUESTIONS_DATA[grid[activeCellId].letter]?.question}</div>
-                                            <div className="text-5xl font-mono mb-8 text-red-500">{timer}</div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <button onClick={() => handleAnswer(1)} className="py-4 bg-blue-600 rounded-2xl font-bold">نقطة للأزرق</button>
-                                                <button onClick={() => handleAnswer(2)} className="py-4 bg-red-600 rounded-2xl font-bold">نقطة للأحمر</button>
-                                                <button onClick={() => setActiveCellId(null)} className="col-span-2 py-2 bg-gray-700 rounded-xl">تخطي</button>
+                                {/* منطقة السؤال */}
+                                <div className="lg:col-span-3 order-3">
+                                    <div className="glass-effect p-6 rounded-3xl min-h-[300px] flex flex-col justify-between">
+                                        {activeId !== null ? (
+                                            <div className="text-center">
+                                                <div className="w-16 h-16 bg-yellow-400 text-black rounded-2xl flex items-center justify-center text-3xl font-black mx-auto mb-4 shadow-lg">
+                                                    {grid[activeId].char}
+                                                </div>
+                                                <p className="text-xl font-bold mb-6 leading-relaxed">
+                                                    {QUESTIONS[grid[activeId].char]}
+                                                </p>
+                                                <div className={`text-4xl font-mono mb-6 ${timer < 5 ? 'text-red-500 animate-pulse' : 'text-green-400'}`}>
+                                                    00:{timer < 10 ? `0${timer}` : timer}
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    <button onClick={() => claimLetter('blue')} className="bg-blue-600 py-3 rounded-xl font-bold hover:bg-blue-500">تمت الإجابة (أزرق)</button>
+                                                    <button onClick={() => claimLetter('red')} className="bg-red-600 py-3 rounded-xl font-bold hover:bg-red-500">تمت الإجابة (أحمر)</button>
+                                                    <button onClick={() => setActiveId(null)} className="text-gray-400 text-sm underline mt-2">إلغاء</button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center text-gray-500 py-20">
-                                            <div className="text-2xl font-bold">اختر حرفاً من الشبكة</div>
-                                        </div>
-                                    )}
-                                    
-                                    <div className="mt-8 flex justify-around border-t border-white/10 pt-8">
-                                        <div className="text-center">
-                                            <div className="text-blue-400 font-bold">الأزرق</div>
-                                            <div className="text-4xl font-black">{teams[0].score}</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-red-400 font-bold">الأحمر</div>
-                                            <div className="text-4xl font-black">{teams[1].score}</div>
-                                        </div>
+                                        ) : (
+                                            <div className="text-center text-gray-400 mt-20">
+                                                <p>اختر حرفاً لبدء السؤال</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </motion.div>
                         )}
 
-                        {view === 'result' && (
-                            <motion.div initial={{scale:0.5}} animate={{scale:1}} className="text-center">
-                                <h2 className="text-6xl font-black mb-4">مبروك للفائز!</h2>
-                                <div className={`text-7xl font-black mb-12 ${winner.color === 'blue' ? 'text-blue-500' : 'text-red-500'}`}>{winner.name}</div>
-                                <button onClick={() => setView('home')} className="px-12 py-4 bg-white text-black rounded-2xl font-bold text-2xl">لعب مرة أخرى</button>
+                        {gameState === 'result' && (
+                            <motion.div 
+                                initial={{ scale: 0.8 }} animate={{ scale: 1 }}
+                                className="text-center glass-effect p-12 rounded-[3rem]"
+                            >
+                                <h2 className="text-4xl font-bold mb-4">انتهت اللعبة!</h2>
+                                <div className="text-6xl font-black mb-8">
+                                    {scores.blue > scores.red ? (
+                                        <span className="text-blue-400">الفريق الأزرق فاز! 🏆</span>
+                                    ) : scores.red > scores.blue ? (
+                                        <span className="text-red-400">الفريق الأحمر فاز! 🏆</span>
+                                    ) : "تعادل! 🤝"}
+                                </div>
+                                <button 
+                                    onClick={() => setGameState('start')}
+                                    className="bg-white text-black px-8 py-3 rounded-full font-bold"
+                                >
+                                    العودة للرئيسية
+                                </button>
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    {/* تذييل الصفحة */}
+                    <footer className="fixed bottom-4 text-gray-500 text-sm">
+                        تحدي المعلومات - نسخة React المطورة
+                    </footer>
                 </div>
             );
         };
