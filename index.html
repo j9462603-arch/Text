@@ -2,19 +2,100 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>موقعي الرهيب</title>
+    <title>لعبة حروف فالكونز - نسخة AI</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background-color: #1a1a1a; color: white; text-align: center; padding: 50px; }
+        .game-container { background-color: #333; border-radius: 20px; padding: 30px; max-width: 500px; margin: auto; border: 4px solid #f39c12; }
+        h1 { color: #f39c12; }
+        .letter-display { font-size: 80px; font-weight: bold; color: #e74c3c; margin: 20px 0; }
+        .question { font-size: 24px; margin-bottom: 20px; height: 50px; }
+        input { padding: 10px; font-size: 18px; border-radius: 5px; border: none; width: 80%; text-align: center; }
+        .score { margin-top: 20px; font-size: 20px; color: #2ecc71; }
+        .timer { font-size: 22px; color: #e67e22; margin-top: 10px; }
+        button { padding: 10px 25px; font-size: 18px; background-color: #f39c12; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        button:hover { background-color: #d35400; }
+    </style>
 </head>
 <body>
 
-    <h1>أهلاً بك في موقعي!</h1>
-    <p>هذا النص يظهر خلف رسالة الترحيب.</p>
+<div class="game-container">
+    <h1>حروف عزيز 🦅</h1>
+    <div id="setup">
+        <p>مستعد تلعب؟ الحرف بيطلع لك وجاوب بسرعة!</p>
+        <button onclick="startGame()">ابدأ اللعب</button>
+    </div>
 
-    <script>
-        // الكود اللي يظهر الرسالة أول ما تفتح الصفحة
-        window.onload = function() {
-            alert("سلام عليكم يامنور موقعنا!");
-        };
-    </script>
+    <div id="game-play" style="display:none;">
+        <div class="letter-display" id="current-letter">-</div>
+        <div class="question" id="question-text">سؤال؟</div>
+        <input type="text" id="answer-input" placeholder="اكتب إجابتك هنا..." onkeyup="checkAnswer(event)">
+        <div class="timer">الوقت: <span id="time-left">5</span> ثواني</div>
+        <div class="score">نقاطك: <span id="score-val">0</span></div>
+    </div>
+</div>
+
+<script>
+    const questions = ["جماد؟", "حيوان؟", "بلاد؟", "نبات؟", "اسم ولد؟", "اسم بنت؟", "أكلة؟", "مهنة؟"];
+    const letters = "أبتثجحخدذرزسشصضطظعغفقكلمنهـوي";
+    let currentLetter = "";
+    let score = 0;
+    let timer;
+    let timeLeft = 5;
+
+    function startGame() {
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('game-play').style.display = 'block';
+        nextRound();
+    }
+
+    function nextRound() {
+        clearInterval(timer);
+        timeLeft = 5;
+        document.getElementById('time-left').innerText = timeLeft;
+        
+        // اختيار حرف عشوائي
+        currentLetter = letters[Math.floor(Math.random() * letters.length)];
+        document.getElementById('current-letter').innerText = currentLetter;
+        
+        // اختيار سؤال عشوائي
+        let randomQuest = questions[Math.floor(Math.random() * questions.length)];
+        document.getElementById('question-text').innerText = randomQuest;
+        
+        document.getElementById('answer-input').value = "";
+        document.getElementById('answer-input').focus();
+
+        // تشغيل المؤقت
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('time-left').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                alert("انتهى الوقت! نقاطك النهائية: " + score);
+                resetGame();
+            }
+        }, 1000);
+    }
+
+    function checkAnswer(event) {
+        if (event.key === "Enter") {
+            let answer = document.getElementById('answer-input').value.trim();
+            if (answer.startsWith(currentLetter)) {
+                score++;
+                document.getElementById('score-val').innerText = score;
+                nextRound();
+            } else {
+                alert("خطأ! الإجابة لازم تبدأ بحرف " + currentLetter);
+            }
+        }
+    }
+
+    function resetGame() {
+        clearInterval(timer);
+        score = 0;
+        document.getElementById('score-val').innerText = score;
+        document.getElementById('setup').style.display = 'block';
+        document.getElementById('game-play').style.display = 'none';
+    }
+</script>
 
 </body>
 </html>
