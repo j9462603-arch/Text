@@ -1,131 +1,76 @@
-DOCTYPE html
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Settings, Play, RotateCcw, Volume2, VolumeX, Monitor, Smartphone, ChevronLeft, Crown, Bell } from 'lucide-react';
-import { io, Socket } from 'socket.io-client';
-import { cn } from './lib/utils';
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>كاشف البيانات</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f0f0; }
+        .info-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; }
+        .highlight { color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-const ALPHABET = 'أبتثجحخدذرزسشصضطظعغفقكلمنهوي'.split('');
-const TEAM_COLORS = [
-  { id: 'blue', bg: 'bg-blue-600', border: 'border-blue-400', shadow: 'shadow-blue-500/50' },
-  { id: 'red', bg: 'bg-red-600', border: 'border-red-400', shadow: 'shadow-red-500/50' },
-];
+<div class="info-box">
+    <h2>بيانات الزائر</h2>
+    <p>نوع جهازك: <span id="device" class="highlight">جاري الفحص...</span></p>
+    <p>موقعك الجغرافي: <span id="location" class="highlight">في انتظار الإذن...</span></p>
+</div>
 
-export default function App() {
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [view, setView] = useState('join');
-  const [role, setRole] = useState<'organizer' | 'viewer' | null>(null);
-  const [roomId, setRoomId] = useState('');
-  const [viewerTeam, setViewerTeam] = useState<1 | 2 | null>(null);
-  const [grid, setGrid] = useState<any[]>([]);
-  const [teams, setTeams] = useState([
-    { id: 1, name: 'الفريق الأول', score: 0, color: 'blue' },
-    { id: 2, name: 'الفريق الثاني', score: 0, color: 'red' }
-  ]);
-  const [timer, setTimer] = useState(60);
-  const [isTimerActive, setIsTimerActive] = useState(false);
-  const [activeCellId, setActiveCellId] = useState<number | null>(null);
-  const [buzzerTeam, setBuzzerTeam] = useState<number | null>(null);
+<script>
+    // 1. كشف نوع الجهاز ونظام التشغيل
+    function detectDevice() {
+        const ua = navigator.userAgent;
+        let deviceType = "غير معروف";
 
-  useEffect(() => {
-    const newSocket = io();
-    setSocket(newSocket);
-    newSocket.on('state-update', (s) => {
-      if (s.view) setView(s.view);
-      if (s.grid) setGrid(s.grid);
-      if (s.teams) setTeams(s.teams);
-      if (s.timer !== undefined) setTimer(s.timer);
-      if (s.buzzerTeam !== undefined) setBuzzerTeam(s.buzzerTeam);
-      if (s.activeCellId !== undefined) setActiveCellId(s.activeCellId);
-    });
-    return () => { newSocket.close(); };
-  }, []);
+        if (/iPad|iPhone|iPod/.test(ua)) {
+            deviceType = "جهاز iOS (iPhone/iPad)";
+        } else if (/Android/.test(ua)) {
+            deviceType = "جهاز أندرويد";
+        } else if (/Windows/.test(ua)) {
+            deviceType = "كمبيوتر (Windows)";
+        } else if (/Macintosh/.test(ua)) {
+            deviceType = "كمبيوتر (Mac)";
+        }
+        
+        document.getElementById('device').innerText = deviceType;
+    }
 
-  const sync = (s: any) => { if (role === 'organizer' && socket) socket.emit('update-state', { roomId, newState: s }); };
+    // 2. كشف الموقع الجغرافي (يتطلب موافقة المستخدم)
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showPosition, showError);
+        } else {
+            document.getElementById('location').innerText = "المتصفح لا يدعم تحديد الموقع.";
+        }
+    }
 
-  const startNewGame = () => {
-    const newGrid = [...ALPHABET].sort(() => Math.random() - 0.5).slice(0, 25).map((l, i) => ({ id: i, letter: l, status: 'neutral' }));
-    setGrid(newGrid);
-    setView('game');
-    sync({ grid: newGrid, view: 'game', teams: teams.map(t => ({ ...t, score: 0 })) });
-  };
+    function showPosition(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        document.getElementById('location').innerText = `خط عرض: ${lat}, خط طول: ${lon}`;
+        // ملاحظة: يمكنك استخدام هذه الإحداثيات مع خرائط جوجل لاحقاً
+    }
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white arabic-text" dir="rtl">
-      <nav className="p-6 border-b border-white/10 flex justify-between items-center">
-        <h1 className="text-2xl font-black">بوابة الحروف</h1>
-        <div className="flex gap-4">
-          {view === 'game' && <div className="bg-white/5 px-4 py-2 rounded-xl font-mono">Room: {roomId}</div>}
-        </div>
-      </nav>
+    function showError(error) {
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                document.getElementById('location').innerText = "رفض المستخدم مشاركة الموقع.";
+                break;
+            case error.POSITION_UNAVAILABLE:
+                document.getElementById('location').innerText = "معلومات الموقع غير متوفرة.";
+                break;
+            default:
+                document.getElementById('location').innerText = "حدث خطأ غير معروف.";
+        }
+    }
 
-      <main className="max-w-7xl mx-auto p-8">
-        <AnimatePresence mode="wait">
-          {view === 'join' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-md mx-auto space-y-6">
-              <input placeholder="اسم الغرفة" value={roomId} onChange={e => setRoomId(e.target.value)} className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-xl" />
-              <div className="grid grid-cols-2 gap-4">
-                <button onClick={() => { setRole('organizer'); socket?.emit('join-room', { roomId, role: 'organizer' }); setView('home'); }} className="p-6 bg-blue-600 rounded-2xl font-bold">منظم</button>
-                <button onClick={() => { setRole('viewer'); socket?.emit('join-room', { roomId, role: 'viewer' }); setView('team-select'); }} className="p-6 bg-purple-600 rounded-2xl font-bold">مشاهد</button>
-              </div>
-            </motion.div>
-          )}
+    // تشغيل الفحص عند دخول الموقع
+    window.onload = function() {
+        detectDevice();
+        getLocation();
+    };
+</script>
 
-          {view === 'team-select' && (
-            <div className="max-w-md mx-auto space-y-4">
-              <h2 className="text-2xl text-center mb-8">اختر فريقك للمشاركة</h2>
-              {teams.map(t => (
-                <button key={t.id} onClick={() => { setViewerTeam(t.id as any); setView('home'); }} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl text-xl hover:bg-white/10">{t.name}</button>
-              ))}
-            </div>
-          )}
-
-          {view === 'home' && (
-            <div className="text-center space-y-8">
-              <h2 className="text-6xl font-black">جاهز للتحدي؟</h2>
-              {role === 'organizer' ? (
-                <button onClick={startNewGame} className="px-12 py-4 bg-white text-black rounded-2xl text-2xl font-bold">ابدأ المسابقة</button>
-              ) : (
-                <p className="text-xl text-gray-400">بانتظار المنظم لبدء الجولة...</p>
-              )}
-            </div>
-          )}
-
-          {view === 'game' && (
-            <div className="grid lg:grid-cols-3 gap-12">
-              <div className="space-y-6">
-                <div className="p-8 bg-blue-600/20 border-2 border-blue-500 rounded-[40px] text-center">
-                  <h3 className="text-2xl font-bold">{teams[0].name}</h3>
-                  <div className="text-6xl font-black my-4">{teams[0].score}</div>
-                </div>
-                {role === 'viewer' && viewerTeam === 1 && (
-                  <button onClick={() => socket?.emit('buzzer-press', { roomId, teamId: 1 })} className="w-full py-8 bg-red-600 rounded-3xl text-3xl font-black shadow-xl">أجب الآن!</button>
-                )}
-              </div>
-
-              <div className="flex justify-center">
-                <div className="grid grid-cols-5 gap-2">
-                  {grid.map(c => (
-                    <div key={c.id} onClick={() => activeCellId === null && role === 'organizer' && sync({ activeCellId: c.id, timer: 60, isTimerActive: true })} className={cn("w-16 h-16 flex items-center justify-center rounded-xl cursor-pointer transition-all", c.status === 'neutral' ? "bg-white/5" : (c.status === 'team1' ? "bg-blue-600" : "bg-red-600"), activeCellId === c.id && "ring-4 ring-yellow-400 scale-110")}>
-                      <span className="text-2xl font-bold">{c.letter}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="p-8 bg-red-600/20 border-2 border-red-500 rounded-[40px] text-center">
-                  <h3 className="text-2xl font-bold">{teams[1].name}</h3>
-                  <div className="text-6xl font-black my-4">{teams[1].score}</div>
-                </div>
-                {role === 'viewer' && viewerTeam === 2 && (
-                  <button onClick={() => socket?.emit('buzzer-press', { roomId, teamId: 2 })} className="w-full py-8 bg-red-600 rounded-3xl text-3xl font-black shadow-xl">أجب الآن!</button>
-                )}
-              </div>
-            </div>
-          )}
-        </AnimatePresence>
-      </main>
-    </div>
-  );
-}
+</body>
+</html>
