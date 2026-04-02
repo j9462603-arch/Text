@@ -1,145 +1,38 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة الذكاء الاصطناعي الشاملة</title>
-    <style>
-        :root {
-            --primary: #6366f1;
-            --dark: #0f172a;
-            --card: #1e293b;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--dark);
-            color: white;
-            margin: 0;
-            padding: 20px;
-        }
-        .container { max-width: 1200px; margin: auto; }
-        header { text-align: center; padding: 40px 0; }
-        header h1 { font-size: 2.5rem; color: var(--primary); }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-        .card {
-            background: var(--card);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.3s;
-            border: 1px solid #334155;
-            cursor: pointer;
-        }
-        .card:hover {
-            transform: translateY(-10px);
-            border-color: var(--primary);
-        }
-        .icon { font-size: 50px; margin-bottom: 15px; }
-        .card h3 { margin: 10px 0; color: #f8fafc; }
-        .card p { color: #94a3b8; font-size: 0.9rem; }
-        
-        /* تأثير الإدخال */
-        .input-area {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 15px;
-            margin-top: 40px;
-            display: none; /* يظهر عند اختيار أداة */
-        }
-        input, textarea {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            background: #0f172a;
-            color: white;
-        }
-        button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
+async function generate() {
+    const prompt = document.getElementById('user-prompt').value;
+    const resultDiv = document.getElementById('result');
+    const apiKey = "ضع_مفتاح_الـ_API_الخاص_بك_هنا"; // تنبيه: لا تشارك هذا المفتاح مع أحد!
 
-<div class="container">
-    <header>
-        <h1>مساعدك الذكي الشامل 🤖</h1>
-        <p>اختر الأداة التي تريد استخدامها وابدأ الإبداع</p>
-    </header>
-
-    <div class="grid">
-        <div class="card" onclick="openTool('توليد الصور')">
-            <div class="icon">🖼️</div>
-            <h3>صناعة صور</h3>
-            <p>حول خيالك إلى حقيقة بدقة عالية</p>
-        </div>
-
-        <div class="card" onclick="openTool('صناعة فيديو')">
-            <div class="icon">🎥</div>
-            <h3>إنتاج فيديو</h3>
-            <p>أنشئ مقاطع فيديو احترافية بضغطة زر</p>
-        </div>
-
-        <div class="card" onclick="openTool('برمجة الأكواد')">
-            <div class="icon">💻</div>
-            <h3>كتابة أكواد</h3>
-            <p>حل المشكلات البرمجية وتطوير السكربتات</p>
-        </div>
-
-        <div class="card" onclick="openTool('كتابة محتوى')">
-            <div class="icon">✍️</div>
-            <h3>مقالات وعبارات</h3>
-            <p>كتابة محتوى إبداعي وتنسيق مقالات</p>
-        </div>
-    </div>
-
-    <div id="interaction-area" class="input-area">
-        <h2 id="tool-title">اسم الأداة</h2>
-        <textarea id="user-prompt" rows="4" placeholder="اكتب ما تريده هنا..."></textarea>
-        <button onclick="generate()">ابدأ التوليد بالذكاء الاصطناعي</button>
-        <div id="result" style="margin-top: 20px; color: #2ecc71;"></div>
-    </div>
-</div>
-
-<script>
-    function openTool(name) {
-        document.getElementById('interaction-area').style.display = 'block';
-        document.getElementById('tool-title').innerText = 'أداة ' + name;
-        document.getElementById('result').innerText = '';
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    if (!prompt) {
+        alert("اكتب وش تبي الذكاء الاصطناعي يسوي!");
+        return;
     }
 
-    function generate() {
-        const prompt = document.getElementById('user-prompt').value;
-        const resultDiv = document.getElementById('result');
-        
-        if (!prompt) {
-            alert("يرجى كتابة وصف أولاً!");
-            return;
-        }
+    resultDiv.innerText = "جاري التفكير وتوليد النص... 🧠";
 
-        resultDiv.innerText = "جاري الاتصال بالخادم وتوليد الطلب... ⏳";
+    try {
+        // إرسال الطلب إلى OpenAI (محرك GPT)
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: "gpt-3.5-turbo", // أو gpt-4 إذا حسابك يدعمه
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7
+            })
+        });
+
+        const data = await response.json();
         
-        // هنا يتم الربط مع API حقيقي (مثل OpenAI)
-        // هذا مجرد محاكاة (Simulation)
-        setTimeout(() => {
-            resultDiv.innerText = "تمت العملية بنجاح! (هنا تظهر النتيجة النهائية سواء صورة أو نص أو كود)";
-        }, 2000);
+        // عرض النتيجة اللي رجعت من الذكاء الاصطناعي
+        const aiResponse = data.choices[0].message.content;
+        resultDiv.innerText = aiResponse;
+
+    } catch (error) {
+        console.error("خطأ:", error);
+        resultDiv.innerText = "للاسف حدث خطأ في الاتصال. تأكد من مفتاح الـ API.";
     }
-</script>
-
-</body>
-</html>
+}
