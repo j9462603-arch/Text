@@ -52,7 +52,6 @@
 
         .app { display: flex; height: 100vh; }
 
-        /* Sidebar */
         .sidebar {
             width: 280px;
             background: var(--sidebar);
@@ -160,7 +159,6 @@
 
         .settings-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-        /* Main */
         .main { flex: 1; display: flex; flex-direction: column; position: relative; }
 
         .header {
@@ -196,7 +194,6 @@
             background: rgba(139, 92, 246, 0.1);
         }
 
-        /* Chat Area */
         .chat-area {
             flex: 1;
             overflow-y: auto;
@@ -279,7 +276,6 @@
         .suggestion-card h4 { font-size: 1rem; margin-bottom: 5px; }
         .suggestion-card p { font-size: 0.85rem; color: var(--text-muted); }
 
-        /* Messages */
         .message {
             display: flex;
             gap: 1rem;
@@ -357,7 +353,6 @@
 
         .msg-action:hover { color: var(--primary); }
 
-        /* Typing */
         .typing {
             display: flex;
             gap: 6px;
@@ -380,7 +375,6 @@
             40% { transform: scale(1); }
         }
 
-        /* Input */
         .input-area {
             padding: 1.5rem 2rem;
             border-top: 1px solid var(--border);
@@ -459,7 +453,6 @@
             color: var(--text-muted);
         }
 
-        /* Code Block */
         .code-block {
             background: #0d1117;
             border-radius: 12px;
@@ -476,7 +469,6 @@
             color: #e6edf3;
         }
 
-        /* Menu Toggle */
         .menu-toggle {
             display: none;
             background: none;
@@ -486,7 +478,6 @@
             cursor: pointer;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .sidebar { position: fixed; right: -280px; height: 100vh; }
             .sidebar.open { right: 0; }
@@ -498,7 +489,6 @@
             .input-area { padding: 1rem; }
         }
 
-        /* Loader */
         .loader {
             position: fixed;
             top: 0;
@@ -526,7 +516,6 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Status Badge */
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -556,7 +545,6 @@
     </div>
 
     <div class="app">
-        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -576,7 +564,6 @@
             </div>
         </aside>
 
-        <!-- Main -->
         <main class="main">
             <header class="header">
                 <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
@@ -628,24 +615,21 @@
     </div>
 
     <script>
-        // ===== GOOGLE GEMINI API KEY (مضمن في الكود) =====
+        // ✅ المفتاح + الموديل الصحيح
         const GEMINI_API_KEY = 'AIzaSyBnNCeVtcfp6HC7Ico-l1dW9L6_A_2puQo';
-        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
 
-        // ===== STATE =====
         let currentChatId = Date.now();
         let chats = JSON.parse(localStorage.getItem('nabdh_chats')) || {};
         let isTyping = false;
         let isDark = true;
         let messageHistory = [];
 
-        // ===== INIT =====
         window.addEventListener('load', () => {
             setTimeout(() => document.getElementById('loader').classList.add('hidden'), 600);
             loadChatHistory();
         });
 
-        // ===== THEME =====
         function toggleTheme() {
             isDark = !isDark;
             document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -657,7 +641,6 @@
             document.getElementById('sidebar').classList.toggle('open');
         }
 
-        // ===== INPUT =====
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
@@ -675,7 +658,6 @@
             sendMessage();
         }
 
-        // ===== SEND MESSAGE =====
         async function sendMessage() {
             const input = document.getElementById('userInput');
             const text = input.value.trim();
@@ -686,7 +668,6 @@
             input.value = '';
             input.style.height = 'auto';
 
-            // Add to history for context
             messageHistory.push({ role: 'user', parts: [{ text }] });
 
             showTyping();
@@ -704,7 +685,6 @@
             }
         }
 
-        // ===== CALL GEMINI API =====
         async function callGemini(message) {
             const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
@@ -747,7 +727,6 @@
             return data.candidates[0].content.parts[0].text;
         }
 
-        // ===== UI FUNCTIONS =====
         function addMessage(role, text) {
             const chatArea = document.getElementById('chatArea');
             const div = document.createElement('div');
@@ -767,17 +746,11 @@
         }
 
         function formatText(text) {
-            // Code blocks
             text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, '<div class="code-block"><code>$2</code></div>');
-            // Inline code
             text = text.replace(/`([^`]+)`/g, '<code style="background:rgba(139,92,246,0.1);padding:2px 6px;border-radius:4px;color:var(--primary);">$1</code>');
-            // Bold
             text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            // Italic
             text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            // Lists
             text = text.replace(/^- (.*$)/gm, '<li style="margin-right:20px;">$1</li>');
-            // Line breaks
             text = text.replace(/\n/g, '<br>');
             return text;
         }
@@ -808,7 +781,6 @@
             if (el) el.remove();
         }
 
-        // ===== CHAT MANAGEMENT =====
         function newChat() {
             currentChatId = Date.now();
             messageHistory = [];
